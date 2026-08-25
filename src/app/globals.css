@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  --pink-glow: #ff2d95;
+  --pink-hot: #ff1493;
+  --pink-soft: #ffb6d9;
+  --pink-dark: #1a0a14;
+  --pink-mid: #2d1025;
+  --pink-accent: #ff6eb4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(ellipse at top, #3d1030 0%, var(--pink-dark) 50%, #0d0510 100%);
+  color: #fff;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 45, 149, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 45, 149, 0.8);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 110, 180, 0.25);
+}
+
+.glow-text {
+  text-shadow: 0 0 20px rgba(255, 45, 149, 0.8);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--pink-hot), var(--pink-glow));
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(255, 45, 149, 0.5);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 110, 180, 0.5);
+  border-radius: 3px;
+}
+
+.chat-bubble {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
