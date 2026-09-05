@@ -58,34 +58,19 @@ export async function joinRoom(
 
   const room = await getRoom(roomId);
   if (!room) throw new Error("Room not found");
-
-  const { data: existing } = await supabase
-    .from("players")
-    .select("*")
-    .eq("id", playerId)
-    .eq("room_id", roomId)
-    .single();
-
-  if (existing) {
-    const { data, error } = await supabase
-      .from("players")
-      .update({ name })
-      .eq("id", playerId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as Player;
-  }
-
+  // Use upsert to atomically insert or update the player row (avoids PK conflict)
   const { data, error } = await supabase
     .from("players")
-    .insert({
-      id: playerId,
-      room_id: roomId,
-      name,
-      is_host: isHost,
-      color,
-    })
+    .upsert(
+      {
+        id: playerId,
+        room_id: roomId,
+        name,
+        is_host: isHost,
+        color,
+      },
+      { onConflict: "id" }
+    )
     .select()
     .single();
 
