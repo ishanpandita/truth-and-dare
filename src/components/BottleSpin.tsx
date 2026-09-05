@@ -124,7 +124,7 @@ export function BottleSpin({
             {/* Pointer arrow at bottom */}
             <polygon
               points="40,195 34,210 46,210"
-              fill="#ff2d95"
+              fill="#ff2d2d"
               stroke="#ff1493"
               strokeWidth="1"
             />
