@@ -52,7 +52,6 @@ export function useVoiceChat(
         if (!audio) {
           audio = document.createElement("audio");
           audio.autoplay = true;
-          audio.playsInline = true;
           audioElementsRef.current.set(peerId, audio);
           // append to DOM so browsers can manage autoplay policies
           audio.style.display = "none";
