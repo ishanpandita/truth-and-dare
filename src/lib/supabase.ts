@@ -127,7 +127,8 @@ export async function getMessages(roomId: string): Promise<ChatMessage[]> {
 
 export async function startSpin(
   roomId: string,
-  playerIds: string[]
+  playerIds: string[],
+  spinnerId?: string
 ): Promise<{ rotation: number; selectedPlayerId: string }> {
   const supabase = getSupabase();
 
@@ -145,12 +146,20 @@ export async function startSpin(
   if (playerIds.length === 0) {
     throw new Error("Need at least one player to spin");
   }
+  // Exclude spinner from being selected if possible
+  let selectable = playerIds;
+  if (spinnerId) {
+    selectable = playerIds.filter((id) => id !== spinnerId);
+    if (selectable.length === 0) selectable = playerIds;
+  }
 
-  const selectedIndex = Math.floor(Math.random() * playerIds.length);
-  const selectedPlayerId = playerIds[selectedIndex];
+  const selectedIndex = Math.floor(Math.random() * selectable.length);
+  const selectedPlayerId = selectable[selectedIndex];
   const segmentAngle = 360 / playerIds.length;
   const baseRotation = 360 * (5 + Math.floor(Math.random() * 3));
-  const targetAngle = selectedIndex * segmentAngle + segmentAngle / 2;
+  // Player positions start at -90deg (top). Offset target angle accordingly so bottle points to player.
+  const indexInAll = playerIds.findIndex((id) => id === selectedPlayerId);
+  const targetAngle = indexInAll * segmentAngle + segmentAngle / 2 - 90; // degrees
   const rotation = baseRotation + (360 - targetAngle);
 
   await supabase
@@ -200,21 +209,36 @@ export async function chooseMode(
   playerId: string,
   playerName: string,
   mode: "truth" | "dare",
-  question: string
 ): Promise<void> {
   const supabase = getSupabase();
-  // Update room with chosen mode and question
+  // Update room with chosen mode but do not set a question yet — other players should ask via chat/voice
   await supabase.from("rooms").update({
     game_mode: mode,
-    current_question: question,
+    current_question: null,
   }).eq("id", roomId);
 
-  // Also insert a chat message announcing the chosen question
+  // Announce choice so others know to ask a question
   await supabase.from("messages").insert({
     room_id: roomId,
     player_id: playerId,
     player_name: playerName,
-    content: `${playerName} chose ${mode.toUpperCase()}: ${question}`,
+    content: `${playerName} chose ${mode.toUpperCase()}. Other players, ask your question now!`,
+  });
+}
+
+export async function setQuestion(
+  roomId: string,
+  setterPlayerId: string,
+  setterPlayerName: string,
+  question: string
+): Promise<void> {
+  const supabase = getSupabase();
+  await supabase.from("rooms").update({ current_question: question }).eq("id", roomId);
+  await supabase.from("messages").insert({
+    room_id: roomId,
+    player_id: setterPlayerId,
+    player_name: setterPlayerName,
+    content: `Question asked: ${question}`,
   });
 }
 

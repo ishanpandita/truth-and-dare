@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
-import { finishSpin, getRoom, joinRoom, resetSpin, startSpin, chooseMode } from "@/lib/supabase";
+import { finishSpin, getRoom, joinRoom, resetSpin, startSpin, chooseMode, setQuestion } from "@/lib/supabase";
 import {
   getPlayerColor,
   getRandomQuestion,
@@ -106,7 +106,7 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
     const playerIds = players.map((p) => p.id);
 
     try {
-      const { selectedPlayerId } = await startSpin(roomId, playerIds);
+      const { selectedPlayerId } = await startSpin(roomId, playerIds, playerId);
 
       setTimeout(async () => {
         await finishSpin(roomId, selectedPlayerId);
@@ -124,6 +124,39 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
   const selectedPlayer = players.find((p) => p.id === room?.spin_result_player_id);
   const isSpinning = localSpinning || (room?.is_spinning ?? false);
   const currentQuestion = room?.current_question ?? null;
+
+  function AskQuestion() {
+    const [q, setQ] = useState("");
+    const [loading, setLoading] = useState(false);
+    return (
+      <div className="mt-6 w-full max-w-md">
+        <div className="rounded-2xl p-4 bg-white/5">
+          <div className="text-sm mb-2">Ask a question for {selectedPlayer?.name}:</div>
+          <div className="flex gap-2">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Type the question here..."
+              className="flex-1 px-3 py-2 rounded-lg bg-white/5"
+            />
+            <button
+              onClick={async () => {
+                if (!q.trim()) return;
+                setLoading(true);
+                await setQuestion(roomId, playerId, playerName, q.trim());
+                setQ("");
+                setLoading(false);
+              }}
+              disabled={loading}
+              className="btn-primary px-4 py-2 rounded-xl"
+            >
+              Ask
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!joined) {
     return (
@@ -287,8 +320,7 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={async () => {
-                      const q = getRandomQuestion("truth");
-                      await chooseMode(roomId, playerId, playerName, "truth", q);
+                      await chooseMode(roomId, playerId, playerName, "truth");
                     }}
                     className="btn-primary px-4 py-2 rounded-xl"
                   >
@@ -296,14 +328,18 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
                   </button>
                   <button
                     onClick={async () => {
-                      const q = getRandomQuestion("dare");
-                      await chooseMode(roomId, playerId, playerName, "dare", q);
+                      await chooseMode(roomId, playerId, playerName, "dare");
                     }}
                     className="btn-primary px-4 py-2 rounded-xl"
                   >
                     Choose DARE
                   </button>
                 </div>
+              )}
+
+              {/* If a mode is chosen and no question yet, allow other players to submit the question */}
+              {!isSpinning && room?.game_mode && !room?.current_question && selectedPlayer && selectedPlayer.id !== playerId && (
+                <AskQuestion />
               )}
             </div>
 
