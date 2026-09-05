@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   spin_result_player_id TEXT,
   bottle_rotation NUMERIC DEFAULT 0,
   game_mode TEXT CHECK (game_mode IN ('truth', 'dare')),
+  current_question TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

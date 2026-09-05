@@ -14,6 +14,7 @@ export interface Room {
   spin_result_player_id: string | null;
   bottle_rotation: number;
   game_mode: "truth" | "dare" | null;
+  current_question?: string | null;
   created_at: string;
 }
 

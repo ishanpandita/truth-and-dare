@@ -52,9 +52,15 @@ export function useVoiceChat(
         if (!audio) {
           audio = document.createElement("audio");
           audio.autoplay = true;
+          audio.playsInline = true;
           audioElementsRef.current.set(peerId, audio);
+          // append to DOM so browsers can manage autoplay policies
+          audio.style.display = "none";
+          document.body.appendChild(audio);
         }
         audio.srcObject = event.streams[0];
+        // Try to play, but ignore promise rejection (autoplay blockers)
+        audio.play().catch(() => {});
       };
 
       pc.onconnectionstatechange = () => {
@@ -160,6 +166,7 @@ export function useVoiceChat(
       peers.forEach((pc) => pc.close());
       audioElements.forEach((a) => {
         a.srcObject = null;
+        if (a.parentNode) a.parentNode.removeChild(a);
       });
     };
   }, []);

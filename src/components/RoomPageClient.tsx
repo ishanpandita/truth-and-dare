@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
-import { finishSpin, getRoom, joinRoom, resetSpin, startSpin } from "@/lib/supabase";
+import { finishSpin, getRoom, joinRoom, resetSpin, startSpin, chooseMode } from "@/lib/supabase";
 import {
   getPlayerColor,
   getRandomQuestion,
@@ -36,8 +36,6 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
   const { room, players, messages } = useRoomRealtime(roomId);
   const [copied, setCopied] = useState(false);
   const [localSpinning, setLocalSpinning] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
-  const spinResultRef = useRef<string | null>(null);
 
   const voice = useVoiceChat(roomId, playerId, joined);
 
@@ -105,19 +103,13 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
     if (localSpinning || !room || players.length < 2) return;
 
     setLocalSpinning(true);
-    setCurrentQuestion(null);
-    spinResultRef.current = null;
-
-    const mode = Math.random() > 0.5 ? "truth" : "dare";
     const playerIds = players.map((p) => p.id);
 
     try {
       const { selectedPlayerId } = await startSpin(roomId, playerIds);
-      spinResultRef.current = selectedPlayerId;
 
       setTimeout(async () => {
-        await finishSpin(roomId, selectedPlayerId, mode as "truth" | "dare");
-        setCurrentQuestion(getRandomQuestion(mode as "truth" | "dare"));
+        await finishSpin(roomId, selectedPlayerId);
         setLocalSpinning(false);
       }, 4200);
     } catch {
@@ -126,14 +118,12 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
   }, [localSpinning, room, players, roomId]);
 
   const handleNextRound = async () => {
-    setCurrentQuestion(null);
     await resetSpin(roomId);
   };
 
-  const selectedPlayer = players.find(
-    (p) => p.id === room?.spin_result_player_id
-  );
+  const selectedPlayer = players.find((p) => p.id === room?.spin_result_player_id);
   const isSpinning = localSpinning || (room?.is_spinning ?? false);
+  const currentQuestion = room?.current_question ?? null;
 
   if (!joined) {
     return (
@@ -291,6 +281,30 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* If the selected player is the current user and question isn't set yet, prompt choice */}
+              {!isSpinning && selectedPlayer?.id === playerId && !room?.game_mode && (
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={async () => {
+                      const q = getRandomQuestion("truth");
+                      await chooseMode(roomId, playerId, playerName, "truth", q);
+                    }}
+                    className="btn-primary px-4 py-2 rounded-xl"
+                  >
+                    Choose TRUTH
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const q = getRandomQuestion("dare");
+                      await chooseMode(roomId, playerId, playerName, "dare", q);
+                    }}
+                    className="btn-primary px-4 py-2 rounded-xl"
+                  >
+                    Choose DARE
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Voice controls */}

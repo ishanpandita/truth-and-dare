@@ -146,6 +146,17 @@ export async function startSpin(
 ): Promise<{ rotation: number; selectedPlayerId: string }> {
   const supabase = getSupabase();
 
+  // Prevent starting a new spin if one is already active
+  const { data: existingRoom } = await supabase
+    .from("rooms")
+    .select("is_spinning")
+    .eq("id", roomId)
+    .single();
+
+  if (existingRoom?.is_spinning) {
+    throw new Error("A spin is already in progress");
+  }
+
   if (playerIds.length === 0) {
     throw new Error("Need at least one player to spin");
   }
@@ -173,7 +184,6 @@ export async function startSpin(
 export async function finishSpin(
   roomId: string,
   selectedPlayerId: string,
-  mode: "truth" | "dare"
 ): Promise<void> {
   const supabase = getSupabase();
   await supabase
@@ -181,7 +191,8 @@ export async function finishSpin(
     .update({
       is_spinning: false,
       spin_result_player_id: selectedPlayerId,
-      game_mode: mode,
+      game_mode: null,
+      current_question: null,
     })
     .eq("id", roomId);
 }
@@ -194,8 +205,32 @@ export async function resetSpin(roomId: string): Promise<void> {
       is_spinning: false,
       spin_result_player_id: null,
       game_mode: null,
+      current_question: null,
     })
     .eq("id", roomId);
+}
+
+export async function chooseMode(
+  roomId: string,
+  playerId: string,
+  playerName: string,
+  mode: "truth" | "dare",
+  question: string
+): Promise<void> {
+  const supabase = getSupabase();
+  // Update room with chosen mode and question
+  await supabase.from("rooms").update({
+    game_mode: mode,
+    current_question: question,
+  }).eq("id", roomId);
+
+  // Also insert a chat message announcing the chosen question
+  await supabase.from("messages").insert({
+    room_id: roomId,
+    player_id: playerId,
+    player_name: playerName,
+    content: `${playerName} chose ${mode.toUpperCase()}: ${question}`,
+  });
 }
 
 function generateShortId(): string {
