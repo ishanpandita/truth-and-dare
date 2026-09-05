@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Volume2 } from "lucide-react";
+import { Mic, MicOff, Radio } from "lucide-react";
 
 interface VoiceControlsProps {
   micPermission: "granted" | "denied" | "prompt" | "unknown";
@@ -19,9 +19,9 @@ export function VoiceControls({
 }: VoiceControlsProps) {
   if (micPermission === "denied") {
     return (
-      <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 text-sm text-red-300">
+      <div className="glass voice-panel rounded-2xl px-4 py-3 flex items-center gap-3 text-sm text-red-300">
         <MicOff className="w-5 h-5 shrink-0" />
-        <span>Microphone access denied. Enable it in browser settings.</span>
+        <span><strong>Mic blocked.</strong> Enable it in browser settings, then reload the room.</span>
       </div>
     );
   }
@@ -30,20 +30,20 @@ export function VoiceControls({
     return (
       <button
         onClick={onRequestMic}
-        className="glass rounded-xl px-4 py-3 flex items-center gap-3 w-full hover:bg-white/10 transition text-sm"
+        className="glass voice-panel rounded-2xl px-4 py-3 flex items-center gap-3 w-full hover:bg-white/10 transition text-sm"
       >
-        <Mic className="w-5 h-5 text-pink-400" />
-        <span className="text-pink-200">Enable Microphone to Talk</span>
+        <Mic className="w-5 h-5 text-[#9de3d0]" />
+        <span className="text-pink-200"><strong className="text-white">Join voice chat</strong><span className="block text-xs text-white/45">Your mic stays off until you press this button.</span></span>
       </button>
     );
   }
 
   return (
-    <div className="glass rounded-xl px-4 py-3 flex items-center justify-between">
+    <div className="glass voice-panel rounded-2xl px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-2 text-sm">
-        <Volume2 className={`w-4 h-4 ${isConnected ? "text-green-400" : "text-pink-300/50"}`} />
+        <Radio className={`w-4 h-4 ${isConnected ? "text-[#9de3d0]" : "text-[#ffb36b]"}`} />
         <span className="text-pink-200/70">
-          {isConnected ? "Voice connected" : "Connecting..."}
+          {isConnected ? "Voice connected" : "Finding your party..."}
         </span>
       </div>
       <button

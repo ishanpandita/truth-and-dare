@@ -298,7 +298,11 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
             </div>
 
             {/* Bottle */}
-            <div className="glass rounded-2xl p-6 pb-16 flex-1 flex flex-col items-center justify-center min-h-[480px]">
+            <div className="glass rounded-[28px] p-6 pb-16 flex-1 flex flex-col items-center justify-center min-h-[480px] relative overflow-hidden">
+              <div className="absolute left-6 top-5 text-left">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[#9de3d0]/70">Tonight&apos;s ritual</p>
+                <h2 className="text-xl font-black text-[#ffe7b5]">Spin &amp; reveal</h2>
+              </div>
               <BottleSpin
                 players={players}
                 rotation={room?.bottle_rotation ?? 0}

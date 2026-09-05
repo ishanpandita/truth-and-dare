@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --pink-glow: #ff2d95;
-  --pink-hot: #ff1493;
-  --pink-soft: #ffb6d9;
-  --pink-dark: #1a0a14;
-  --pink-mid: #2d1025;
-  --pink-accent: #ff6eb4;
+  --pink-glow: #ff725e;
+  --pink-hot: #f04f68;
+  --pink-soft: #ffd7c9;
+  --pink-dark: #10131f;
+  --pink-mid: #20243a;
+  --pink-accent: #9de3d0;
 }
 
 * {
@@ -19,9 +19,12 @@ body {
 }
 
 body {
-  background: radial-gradient(ellipse at top, #3d1030 0%, var(--pink-dark) 50%, #0d0510 100%);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 114, 94, 0.22), transparent 28rem),
+    radial-gradient(circle at 88% 22%, rgba(157, 227, 208, 0.16), transparent 25rem),
+    linear-gradient(145deg, #10131f 0%, #17162b 58%, #261a2b 100%);
   color: #fff;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 @keyframes float {
@@ -54,9 +57,10 @@ body {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(22, 25, 42, 0.72);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 110, 180, 0.25);
+  border: 1px solid rgba(255, 215, 201, 0.16);
+  box-shadow: 0 20px 60px rgba(6, 7, 16, 0.22);
 }
 
 .glow-text {
@@ -65,6 +69,8 @@ body {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--pink-hot), var(--pink-glow));
+  color: #21121a;
+  box-shadow: 0 8px 22px rgba(240, 79, 104, 0.24);
   transition: all 0.3s ease;
 }
 
@@ -104,5 +110,46 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes stage-breathe {
+  0%,
+  100% {
+    transform: scale(0.98);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.9;
+  }
+}
+
+.bottle-stage {
+  background: radial-gradient(circle, rgba(255, 114, 94, 0.2), transparent 62%);
+}
+
+.bottle-stage::before {
+  content: "";
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  border: 1px solid rgba(157, 227, 208, 0.24);
+  border-radius: 50%;
+  animation: stage-breathe 5s ease-in-out infinite;
+}
+
+.voice-panel {
+  border-color: rgba(157, 227, 208, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

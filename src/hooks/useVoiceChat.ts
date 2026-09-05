@@ -24,6 +24,7 @@ export function useVoiceChat(
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingIceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const sendSignalRef = useRef<(type: string, data: unknown, to?: string) => void>(
     () => {}
@@ -31,6 +32,9 @@ export function useVoiceChat(
 
   const createPeerConnection = useCallback(
     (peerId: string): RTCPeerConnection => {
+      const existingPeer = peersRef.current.get(peerId);
+      if (existingPeer) return existingPeer;
+
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
@@ -53,18 +57,19 @@ export function useVoiceChat(
           audio = document.createElement("audio");
           audio.autoplay = true;
           audioElementsRef.current.set(peerId, audio);
-          // append to DOM so browsers can manage autoplay policies
-          audio.style.display = "none";
-          document.body.appendChild(audio);
         }
         audio.srcObject = event.streams[0];
-        // Try to play, but ignore promise rejection (autoplay blockers)
-        audio.play().catch(() => {});
+        void audio.play().catch(() => undefined);
       };
 
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === "connected") {
           setIsConnected(true);
+        } else if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
+          peersRef.current.delete(peerId);
+          audioElementsRef.current.get(peerId)?.remove();
+          audioElementsRef.current.delete(peerId);
+          setIsConnected(peersRef.current.size > 0);
         }
       };
 
@@ -93,23 +98,35 @@ export function useVoiceChat(
         return;
       }
 
-      const pc = peersRef.current.get(from);
+      let pc = peersRef.current.get(from);
 
       if (type === "offer") {
-        const connection = pc ?? createPeerConnection(from);
-        await connection.setRemoteDescription(
+        pc = pc ?? createPeerConnection(from);
+        await pc.setRemoteDescription(
           new RTCSessionDescription(payload as RTCSessionDescriptionInit)
         );
-        const answer = await connection.createAnswer();
-        await connection.setLocalDescription(answer);
+        const pending = pendingIceRef.current.get(from) ?? [];
+        await Promise.all(pending.map((candidate) => pc!.addIceCandidate(new RTCIceCandidate(candidate))));
+        pendingIceRef.current.delete(from);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
         sendSignalRef.current("answer", answer, from);
       } else if (type === "answer" && pc) {
         await pc.setRemoteDescription(
           new RTCSessionDescription(payload as RTCSessionDescriptionInit)
         );
-      } else if (type === "ice-candidate" && pc) {
-        await pc.addIceCandidate(new RTCIceCandidate(payload as RTCIceCandidateInit));
+      } else if (type === "ice-candidate") {
+        const candidate = payload as RTCIceCandidateInit;
+        pc = pc ?? createPeerConnection(from);
+        if (pc.remoteDescription) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } else {
+          const pending = pendingIceRef.current.get(from) ?? [];
+          pending.push(candidate);
+          pendingIceRef.current.set(from, pending);
+        }
       }
+
     },
     [enabled, playerId, createOffer, createPeerConnection]
   );
@@ -126,9 +143,17 @@ export function useVoiceChat(
         },
         video: false,
       });
+      localStreamRef.current?.getTracks().forEach((track) => track.stop());
       localStreamRef.current = stream;
+      peersRef.current.forEach((peer) => peer.close());
+      peersRef.current.clear();
+      audioElementsRef.current.forEach((audio) => {
+        audio.srcObject = null;
+        audio.remove();
+      });
+      audioElementsRef.current.clear();
       setMicPermission("granted");
-      setIsConnected(true);
+      setIsConnected(false);
 
       sendSignalRef.current("join-voice", null);
     } catch {
@@ -157,15 +182,17 @@ export function useVoiceChat(
   }, [enabled, micPermission]);
 
   useEffect(() => {
+    const stream = localStreamRef.current;
+    const peers = peersRef.current;
+    const audioElements = audioElementsRef.current;
+    const pendingIce = pendingIceRef.current;
+
     return () => {
-      const stream = localStreamRef.current;
-      const peers = peersRef.current;
-      const audioElements = audioElementsRef.current;
+      pendingIce.clear();
       stream?.getTracks().forEach((t) => t.stop());
       peers.forEach((pc) => pc.close());
       audioElements.forEach((a) => {
         a.srcObject = null;
-        if (a.parentNode) a.parentNode.removeChild(a);
       });
     };
   }, []);
