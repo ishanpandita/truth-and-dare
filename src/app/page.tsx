@@ -43,7 +43,9 @@ export default function HomePage() {
       const room = await createRoom(playerId);
       await joinRoom(room.id, playerId, name.trim(), true, "#FF2D95");
 
-      router.push(`/room/${room.id}?host=true`);
+      // Do not append ?host=true to avoid triggering external moderation
+      // on meet.jit.si. A simple in-page mic press should suffice.
+      router.push(`/room/${room.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create room");
     } finally {
