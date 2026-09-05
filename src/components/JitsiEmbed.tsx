@@ -10,15 +10,20 @@ interface JitsiEmbedProps {
   onClose: () => void;
 }
 
+type JitsiAPI = {
+  addEventListener: (event: string, handler: (...args: unknown[]) => void) => void;
+  dispose: () => void;
+};
+
 declare global {
   interface Window {
-    JitsiMeetExternalAPI: any;
+    JitsiMeetExternalAPI?: new (domain: string, options?: Record<string, unknown>) => JitsiAPI;
   }
 }
 
 export function JitsiEmbed({ roomId, playerName, open, onClose }: JitsiEmbedProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const apiRef = useRef<any>(null);
+  const apiRef = useRef<JitsiAPI | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -62,12 +67,13 @@ export function JitsiEmbed({ roomId, playerName, open, onClose }: JitsiEmbedProp
           },
         };
 
-        apiRef.current = new window.JitsiMeetExternalAPI(domain, options);
-
-        // Ensure audio is unmuted when user clicks Join (browser may block otherwise)
-        apiRef.current.addEventListener("participantRoleChanged", (event: any) => {
-          // no-op
-        });
+        const ApiCtor = window.JitsiMeetExternalAPI;
+        if (ApiCtor) {
+          apiRef.current = new ApiCtor(domain, options);
+          apiRef.current.addEventListener("participantRoleChanged", () => {
+            // no-op: placeholder for potential hooks
+          });
+        }
       } catch (err) {
         console.error("Jitsi init error", err);
       }
@@ -78,7 +84,9 @@ export function JitsiEmbed({ roomId, playerName, open, onClose }: JitsiEmbedProp
     return () => {
       try {
         apiRef.current?.dispose();
-      } catch (e) {}
+      } catch (disposeErr) {
+        console.debug("Jitsi dispose error", disposeErr);
+      }
       apiRef.current = null;
     };
   }, [open, roomId, playerName]);
