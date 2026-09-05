@@ -7,7 +7,6 @@ import { VoiceControls } from "@/components/VoiceControls";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { finishSpin, getRoom, joinRoom, resetSpin, startSpin, chooseMode, setQuestion, leaveRoom } from "@/lib/supabase";
-import { JitsiEmbed } from "@/components/JitsiEmbed";
 import {
   getPlayerColor,
   getRandomQuestion,
@@ -381,14 +380,8 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
               micPermission={voice.micPermission}
               isMuted={voice.isMuted}
               isConnected={voice.isConnected}
-              onRequestMic={() => setShowJitsi(true)}
+              onRequestMic={() => voice.requestMic()}
               onToggleMute={voice.toggleMute}
-            />
-            <JitsiEmbed
-              roomId={roomId}
-              playerName={playerName || "Guest"}
-              open={showJitsi}
-              onClose={() => setShowJitsi(false)}
             />
           </div>
 
