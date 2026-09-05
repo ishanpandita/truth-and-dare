@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
-import { finishSpin, getRoom, joinRoom, resetSpin, startSpin, chooseMode, setQuestion } from "@/lib/supabase";
+import { finishSpin, getRoom, joinRoom, resetSpin, startSpin, chooseMode, setQuestion, leaveRoom } from "@/lib/supabase";
 import {
   getPlayerColor,
   getRandomQuestion,
@@ -14,10 +14,13 @@ import {
   getStoredPlayerName,
   setStoredPlayerId,
   setStoredPlayerName,
+  TRUTH_QUESTIONS,
+  DARE_CHALLENGES,
 } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, Users, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -38,6 +41,7 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
   const [localSpinning, setLocalSpinning] = useState(false);
 
   const voice = useVoiceChat(roomId, playerId, joined);
+  const router = useRouter();
 
   useEffect(() => {
     if (!playerId) return;
@@ -128,15 +132,35 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
   function AskQuestion() {
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(false);
+    const defaultList = room?.game_mode === "truth" ? TRUTH_QUESTIONS : DARE_CHALLENGES;
     return (
       <div className="mt-6 w-full max-w-md">
         <div className="rounded-2xl p-4 bg-white/5">
           <div className="text-sm mb-2">Ask a question for {selectedPlayer?.name}:</div>
+
+          {defaultList && (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {defaultList.slice(0, 6).map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={async () => {
+                    setLoading(true);
+                    await setQuestion(roomId, playerId, playerName, item);
+                    setLoading(false);
+                  }}
+                  className="px-3 py-2 rounded-lg bg-pink-500/20 text-sm"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-2">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Type the question here..."
+              placeholder="Or type a custom question..."
               className="flex-1 px-3 py-2 rounded-lg bg-white/5"
             />
             <button
@@ -203,13 +227,20 @@ export function RoomPageClient({ roomId, isHost: initialIsHost }: RoomPageProps)
       {/* Header */}
       <header className="glass border-b border-pink-400/10 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <Link
-            href="/"
+          <button
+            onClick={async () => {
+              try {
+                await leaveRoom(roomId, playerId);
+              } catch (e) {
+                // ignore errors but continue navigation
+              }
+              router.push("/");
+            }}
             className="text-pink-300/60 hover:text-pink-300 transition flex items-center gap-1 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Leave
-          </Link>
+          </button>
 
           <div className="text-center">
             <h1 className="font-black text-lg glow-text bg-gradient-to-r from-pink-300 to-fuchsia-400 bg-clip-text text-transparent">

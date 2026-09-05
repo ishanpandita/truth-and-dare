@@ -242,6 +242,11 @@ export async function setQuestion(
   });
 }
 
+export async function leaveRoom(roomId: string, playerId: string): Promise<void> {
+  const supabase = getSupabase();
+  await supabase.from("players").delete().eq("id", playerId).eq("room_id", roomId);
+}
+
 function generateShortId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
